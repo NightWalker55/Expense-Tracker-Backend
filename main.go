@@ -1,0 +1,60 @@
+package main
+
+import (
+	"log"
+	"os"
+
+	"github.com/ayman/expense-tracker-backend/db"
+	"github.com/ayman/expense-tracker-backend/handlers"
+	"github.com/ayman/expense-tracker-backend/models"
+	"github.com/gofiber/fiber/v2"
+	"github.com/joho/godotenv"
+)
+
+type Expense struct {
+	ID     int     `json:"id"`
+	Amount float64 `json:"amount"`
+	//Date       string    `json:"date"`
+	//Created_At time.Time `json:"created_at"`
+}
+
+func main() {
+	err := godotenv.Load(".env")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	app := fiber.New()
+
+	config := &db.Config{
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
+		Password: os.Getenv("DB_PASS"),
+		DBName:   os.Getenv("DB_NAME"),
+		User:     os.Getenv("DB_USER"),
+		SSLMode:  os.Getenv("DB_SSLMODE"),
+	}
+
+	db, err := db.NewConnection(config)
+
+	if err != nil {
+		log.Fatal("Could not load the database")
+	}
+
+	err = models.MigrateExpense(db)
+
+	if err != nil {
+		log.Fatal("Could not migrate DB")
+	}
+
+	r := handlers.Repository{
+		DB: db,
+	}
+
+	r.SetupRoutes((app))
+
+	log.Println("Server running on port 8080")
+	log.Fatal(app.Listen(":8080"))
+
+}
