@@ -52,6 +52,10 @@ func main() {
 		DB: db,
 	}
 
+	app.Get("/", func(c *fiber.Ctx) error {
+		return c.SendString("Welcome to the Expense Tracker API!")
+	})
+
 	r.SetupRoutes((app))
 
 	log.Println("Server running on port 8080")
