@@ -8,7 +8,7 @@ import (
 	"github.com/ayman/expense-tracker-backend/handlers"
 	"github.com/ayman/expense-tracker-backend/models"
 	"github.com/gofiber/fiber/v2"
-	"github.com/joho/godotenv"
+	
 )
 
 type Expense struct {
