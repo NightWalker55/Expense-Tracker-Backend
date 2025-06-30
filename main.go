@@ -8,6 +8,7 @@ import (
 	"github.com/ayman/expense-tracker-backend/handlers"
 	"github.com/ayman/expense-tracker-backend/models"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 )
 
@@ -26,6 +27,11 @@ func main() {
 	}
 
 	app := fiber.New()
+
+	app.Use(cors.New(cors.Config{
+		AllowOrigins: "*",
+		AllowHeaders: "Origin, Content-Type, Accept",
+	}))
 
 	config := &db.Config{
 		Host:     os.Getenv("DB_HOST"),
