@@ -12,13 +12,6 @@ import (
 	"github.com/joho/godotenv"
 )
 
-type Expense struct {
-	ID     int     `json:"id"`
-	Amount float64 `json:"amount"`
-	//Date       string    `json:"date"`
-	//Created_At time.Time `json:"created_at"`
-}
-
 func main() {
 	err := godotenv.Load(".env")
 
