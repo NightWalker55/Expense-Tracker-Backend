@@ -16,7 +16,7 @@ type Repository struct {
 type ExpenseInput struct {
 	Expense_Name string  `json:"expense_name"`
 	Amount       float64 `json:"amount"`
-	Date         string  `json:"date"` // JSON will send date as string
+	Date         string  `json:"date"`
 }
 
 func (r *Repository) CreateExpense(context *fiber.Ctx) error {
