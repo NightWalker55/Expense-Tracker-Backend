@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"strconv"
+
 	"github.com/ayman/expense-tracker-backend/models"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -22,7 +24,6 @@ type ExpenseInput struct {
 func (r *Repository) CreateExpense(context *fiber.Ctx) error {
 	var input ExpenseInput
 
-	// 👇 Now parses date as string from JSON
 	if err := context.BodyParser(&input); err != nil {
 		return context.Status(http.StatusUnprocessableEntity).JSON(&fiber.Map{
 			"message": "Invalid input",
@@ -30,7 +31,6 @@ func (r *Repository) CreateExpense(context *fiber.Ctx) error {
 		})
 	}
 
-	// ✅ Parse string to time.Time
 	parsedDate, err := time.Parse("2006-01-02", input.Date)
 	if err != nil {
 		return context.Status(http.StatusBadRequest).JSON(&fiber.Map{
@@ -130,6 +130,78 @@ func (r *Repository) GetExpenseByID(context *fiber.Ctx) error {
 	})
 }
 
+func (r *Repository) UpdateExpense(context *fiber.Ctx) error {
+	idParam := context.Params("id")
+	if idParam == "" {
+		return context.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message": "ID cannot be empty",
+		})
+	}
+
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		return context.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message": "Invalid ID format",
+		})
+	}
+
+	var input ExpenseInput
+	if err := context.BodyParser(&input); err != nil {
+		return context.Status(http.StatusUnprocessableEntity).JSON(&fiber.Map{
+			"message": "Invalid input",
+			"error":   err.Error(),
+		})
+	}
+
+	if input.Expense_Name == "" {
+		return context.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message": "Expense name is required",
+		})
+	}
+	if input.Amount <= 0 {
+		return context.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message": "Amount must be greater than 0",
+		})
+	}
+
+	parsedDate, err := time.Parse("2006-01-02", input.Date)
+	if err != nil {
+		return context.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message": "Invalid date format (expected YYYY-MM-DD)",
+		})
+	}
+
+	if parsedDate.After(time.Now()) {
+		return context.Status(http.StatusBadRequest).JSON(&fiber.Map{
+			"message": "Date cannot be in the future",
+		})
+	}
+
+	var expense models.Expense
+	if err := r.DB.First(&expense, uint(id)).Error; err != nil {
+		return context.Status(http.StatusNotFound).JSON(&fiber.Map{
+			"message": "Expense not found",
+		})
+	}
+
+	expense.Expense_Name = input.Expense_Name
+	expense.Amount = input.Amount
+	expense.Date = parsedDate
+
+	if err := r.DB.Save(&expense).Error; err != nil {
+
+		return context.Status(http.StatusInternalServerError).JSON(&fiber.Map{
+			"message": "Could not update expense",
+			"error":   err.Error(),
+		})
+	}
+
+	return context.Status(http.StatusOK).JSON(&fiber.Map{
+		"message": "Expense updated successfully",
+		"data":    expense,
+	})
+}
+
 func (r *Repository) SetupRoutes(app *fiber.App) {
 	api := app.Group("/api")
 
@@ -137,4 +209,5 @@ func (r *Repository) SetupRoutes(app *fiber.App) {
 	api.Delete("/delete_expense/:id", r.DeleteExpense)
 	api.Get("/daily_expense", r.GetDailyExpense)
 	api.Get("/daily_expense/:id", r.GetExpenseByID)
+	api.Put("/update_expense/:id", r.UpdateExpense)
 }
