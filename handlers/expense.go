@@ -164,19 +164,6 @@ func (r *Repository) UpdateExpense(context *fiber.Ctx) error {
 		})
 	}
 
-	parsedDate, err := time.Parse("2006-01-02", input.Date)
-	if err != nil {
-		return context.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"message": "Invalid date format (expected YYYY-MM-DD)",
-		})
-	}
-
-	if parsedDate.After(time.Now()) {
-		return context.Status(http.StatusBadRequest).JSON(&fiber.Map{
-			"message": "Date cannot be in the future",
-		})
-	}
-
 	var expense models.Expense
 	if err := r.DB.First(&expense, uint(id)).Error; err != nil {
 		return context.Status(http.StatusNotFound).JSON(&fiber.Map{
@@ -186,10 +173,23 @@ func (r *Repository) UpdateExpense(context *fiber.Ctx) error {
 
 	expense.Expense_Name = input.Expense_Name
 	expense.Amount = input.Amount
-	expense.Date = parsedDate
+
+	if input.Date != "" {
+		parsedDate, err := time.Parse("2006-01-02", input.Date)
+		if err != nil {
+			return context.Status(http.StatusBadRequest).JSON(&fiber.Map{
+				"message": "Invalid date format (expected YYYY-MM-DD)",
+			})
+		}
+		if parsedDate.After(time.Now()) {
+			return context.Status(http.StatusBadRequest).JSON(&fiber.Map{
+				"message": "Date cannot be in the future",
+			})
+		}
+		expense.Date = parsedDate
+	}
 
 	if err := r.DB.Save(&expense).Error; err != nil {
-
 		return context.Status(http.StatusInternalServerError).JSON(&fiber.Map{
 			"message": "Could not update expense",
 			"error":   err.Error(),
@@ -209,5 +209,5 @@ func (r *Repository) SetupRoutes(app *fiber.App) {
 	api.Delete("/delete_expense/:id", r.DeleteExpense)
 	api.Get("/daily_expense", r.GetDailyExpense)
 	api.Get("/daily_expense/:id", r.GetExpenseByID)
-	api.Put("/update_expense/:id", r.UpdateExpense)
+	api.Patch("/update_expense/:id", r.UpdateExpense)
 }
