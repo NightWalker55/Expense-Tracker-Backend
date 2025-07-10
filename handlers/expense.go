@@ -130,6 +130,18 @@ func (r *Repository) GetExpenseByID(context *fiber.Ctx) error {
 	})
 }
 
+func (r *Repository) GetAllExpense(c *fiber.Ctx) error {
+	var expenses []models.Expense
+
+	if err := r.DB.Find(&expenses).Error; err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to fetch expenses",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(expenses)
+}
+
 func (r *Repository) UpdateExpense(context *fiber.Ctx) error {
 	idParam := context.Params("id")
 	if idParam == "" {
@@ -210,4 +222,5 @@ func (r *Repository) SetupRoutes(app *fiber.App) {
 	api.Get("/daily_expense", r.GetDailyExpense)
 	api.Get("/daily_expense/:id", r.GetExpenseByID)
 	api.Patch("/update_expense/:id", r.UpdateExpense)
+	api.Get("/all_daily_expense", r.GetAllExpense)
 }
